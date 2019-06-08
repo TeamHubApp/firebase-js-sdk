@@ -213,7 +213,7 @@ export class SchemaConverter implements SimpleDbSchemaConverter {
 
       const promises: Array<PersistencePromise<void>> = [];
       return documentsStore
-        .iterate((key, doc) => {
+        .iterate((key, _doc) => {
           const path = new ResourcePath(key);
           const docSentinelKey = sentinelKey(path);
           promises.push(
@@ -246,7 +246,7 @@ export class SchemaConverter implements SimpleDbSchemaConverter {
 
     // Helper to add an index entry iff we haven't already written it.
     const cache = new MemoryCollectionParentIndex();
-    const addEntry = collectionPath => {
+    const addEntry = (collectionPath): PersistencePromise<void> | undefined => {
       if (cache.add(collectionPath)) {
         const collectionId = collectionPath.lastSegment();
         const parentPath = collectionPath.popLast();
@@ -270,7 +270,7 @@ export class SchemaConverter implements SimpleDbSchemaConverter {
           .store<DbDocumentMutationKey, DbDocumentMutation>(
             DbDocumentMutation.store
           )
-          .iterate({ keysOnly: true }, ([userID, encodedPath, batchId], _) => {
+          .iterate({ keysOnly: true }, ([_userID, encodedPath, _batchId], _) => {
             const path = decode(encodedPath);
             return addEntry(path.popLast());
           });

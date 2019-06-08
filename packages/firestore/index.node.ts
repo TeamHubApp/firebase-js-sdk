@@ -17,11 +17,10 @@
 
 import firebase from '@firebase/app';
 import './src/platform_node/node_init';
-import { Firestore } from './src/api/database';
 import { configureForFirebase } from './src/platform/config';
 import * as types from '@firebase/firestore-types';
 
-export function registerFirestore(instance) {
+export function registerFirestore(instance): void {
   configureForFirebase(instance);
 }
 

@@ -701,9 +701,9 @@ apiDescribe('Database', persistence => {
       const deferred1 = new Deferred<void>();
       const deferred2 = new Deferred<void>();
       doc.set({ foo: 'bar' }).then(() => {
-        doc.onSnapshot(snap => {
+        doc.onSnapshot(_snap => {
           deferred1.resolve();
-          doc.onSnapshot(snap => {
+          doc.onSnapshot(_snap => {
             deferred2.resolve();
           });
         });
@@ -978,7 +978,7 @@ apiDescribe('Database', persistence => {
       await withTestDoc(persistence, async docRef => {
         const oldDelete = SimpleDb.delete;
         try {
-          SimpleDb.delete = (name: string): Promise<void> => {
+          SimpleDb.delete = (_name: string): Promise<void> => {
             return Promise.reject('Failed to delete the database.');
           };
           const firestore = docRef.firestore;

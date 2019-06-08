@@ -429,12 +429,12 @@ export class FirestoreClient {
           serializer
         );
 
-        const remoteStoreOnlineStateChangedHandler = onlineState =>
+        const remoteStoreOnlineStateChangedHandler = (onlineState): void =>
           this.syncEngine.applyOnlineStateChange(
             onlineState,
             OnlineStateSource.RemoteStore
           );
-        const sharedClientStateOnlineStateChangedHandler = onlineState =>
+        const sharedClientStateOnlineStateChangedHandler = (onlineState): void =>
           this.syncEngine.applyOnlineStateChange(
             onlineState,
             OnlineStateSource.SharedClientState

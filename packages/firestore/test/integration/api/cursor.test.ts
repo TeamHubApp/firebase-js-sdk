@@ -26,6 +26,7 @@ import {
   withTestDb,
   withTestDbs
 } from '../util/helpers';
+import { Timestamp as TimestampInstance } from '@firebase/firestore-types';
 
 const Timestamp = firebase.firestore!.Timestamp;
 const FieldPath = firebase.firestore!.FieldPath;
@@ -242,7 +243,7 @@ apiDescribe('Cursors', persistence => {
 
   // Currently, timestamps are truncated to microseconds on the backend, so
   // don't create timestamps with more precision than that.
-  const makeTimestamp = (seconds, micros) =>
+  const makeTimestamp = (seconds, micros): TimestampInstance =>
     new Timestamp(seconds, micros * 1000);
 
   it('can accept Timestamps as bounds', () => {

@@ -96,7 +96,8 @@ export class WebChannelConnection implements Connection {
     const url = this.makeUrl(rpcName);
 
     return new Promise((resolve: Resolver<Resp>, reject: Rejecter) => {
-      // tslint:disable-next-line:no-any XhrIo doesn't have TS typings.
+      // XhrIo doesn't have TS typings.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const xhr: any = new XhrIo();
       xhr.listenOnce(EventType.COMPLETE, () => {
         try {
@@ -248,7 +249,7 @@ export class WebChannelConnection implements Connection {
 
     const url = urlParts.join('');
     log.debug(LOG_TAG, 'Creating WebChannel: ' + url + ' ' + request);
-    // tslint:disable-next-line:no-any Because listen isn't defined on it.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, Because listen isn't defined on it.
     const channel = webchannelTransport.createWebChannel(url, request) as any;
 
     // WebChannel supports sending the first message with the handshake - saving
@@ -287,7 +288,7 @@ export class WebChannelConnection implements Connection {
     const unguardedEventListen = <T>(
       type: WebChannel.EventType,
       fn: (param?: T) => void
-    ) => {
+    ): void => {
       // TODO(dimond): closure typing seems broken because WebChannel does
       // not implement goog.events.Listenable
       channel.listen(type, (param?: T) => {
@@ -331,7 +332,7 @@ export class WebChannelConnection implements Connection {
     // WebChannel delivers message events as array. If batching is not enabled
     // (it's off by default) each message will be delivered alone, resulting in
     // a single element array.
-    type WebChannelResponse = { data: Resp[] };
+    interface WebChannelResponse { data: Resp[] }
 
     unguardedEventListen<WebChannelResponse>(
       WebChannel.EventType.MESSAGE,
@@ -344,7 +345,8 @@ export class WebChannelConnection implements Connection {
           // compatible with the bug we need to check either condition. The latter
           // can be removed once the fix has been rolled out.
           const error =
-            // tslint:disable-next-line:no-any msgData.error is not typed.
+            // msgData.error is not typed.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (msgData as any).error || (msgData[0] && msgData[0].error);
           if (error) {
             log.debug(LOG_TAG, 'WebChannel received error:', error);
