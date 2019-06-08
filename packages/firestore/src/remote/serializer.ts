@@ -1161,7 +1161,9 @@ export class JsonProtoSerializer {
   }
 
   private toFilter(filters: Filter[]): api.Filter | undefined {
-    if (filters.length === 0) {return;}
+    if (filters.length === 0) {
+      return;
+    }
     const protos = filters.map(filter =>
       filter instanceof RelationFilter
         ? this.toRelationFilter(filter)
@@ -1190,7 +1192,9 @@ export class JsonProtoSerializer {
   }
 
   private toOrder(orderBys: OrderBy[]): api.Order[] | undefined {
-    if (orderBys.length === 0) {return;}
+    if (orderBys.length === 0) {
+      return;
+    }
     return orderBys.map(order => this.toPropertyOrder(order));
   }
 

@@ -28,12 +28,18 @@ function customDeepEqual(left, right): boolean {
   /**
    * START: Custom compare logic
    */
-  if (left && typeof left.isEqual === 'function') {return left.isEqual(right);}
-  if (right && typeof right.isEqual === 'function') {return right.isEqual(left);}
+  if (left && typeof left.isEqual === 'function') {
+    return left.isEqual(right);
+  }
+  if (right && typeof right.isEqual === 'function') {
+    return right.isEqual(left);
+  }
   /**
    * END: Custom compare logic
    */
-  if (left === right) {return true;}
+  if (left === right) {
+    return true;
+  }
   if (
     typeof left === 'number' &&
     typeof right === 'number' &&
@@ -42,14 +48,24 @@ function customDeepEqual(left, right): boolean {
   ) {
     return true;
   }
-  if (typeof left !== typeof right) {return false;} // needed for structurally different objects
-  if (Object(left) !== left) {return false;} // primitive values
+  if (typeof left !== typeof right) {
+    return false;
+  } // needed for structurally different objects
+  if (Object(left) !== left) {
+    return false;
+  } // primitive values
   const keys = Object.keys(left);
-  if (keys.length !== Object.keys(right).length) {return false;}
+  if (keys.length !== Object.keys(right).length) {
+    return false;
+  }
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    if (!Object.prototype.hasOwnProperty.call(right, key)) {return false;}
-    if (!customDeepEqual(left[key], right[key])) {return false;}
+    if (!Object.prototype.hasOwnProperty.call(right, key)) {
+      return false;
+    }
+    if (!customDeepEqual(left[key], right[key])) {
+      return false;
+    }
   }
   return true;
 }

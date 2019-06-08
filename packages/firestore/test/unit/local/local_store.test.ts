@@ -76,7 +76,7 @@ class LocalStoreTester {
   private lastChanges: MaybeDocumentMap | null = null;
   private lastTargetId: TargetId | null = null;
   private batches: MutationBatch[] = [];
-  constructor(public localStore: LocalStore, readonly gcIsEager) { }
+  constructor(public localStore: LocalStore, readonly gcIsEager) {}
 
   after(
     op: Mutation | Mutation[] | RemoteEvent | LocalViewChanges
@@ -207,7 +207,7 @@ class LocalStoreTester {
           doc,
           returned,
           `Expected '${
-          returned ? returned.toString() : null
+            returned ? returned.toString() : null
           }' to equal '${doc.toString()}'.`
         );
       }
@@ -345,7 +345,7 @@ function genericLocalStoreTests(
 
   it(
     'handles SetMutation -> Ack (Held) -> SetMutation -> Reject -> ' +
-    'RemoteEvent (Release Ack)',
+      'RemoteEvent (Release Ack)',
     () => {
       return (
         expectLocalStore()
