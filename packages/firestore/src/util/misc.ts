@@ -19,7 +19,6 @@ import { assert } from './assert';
 
 export type EventHandler<E> = (value: E) => void;
 
-// tslint:disable-next-line:class-as-namespace
 export class AutoId {
   static newId(): string {
     // Alphanumeric characters
