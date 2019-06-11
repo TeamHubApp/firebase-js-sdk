@@ -861,9 +861,9 @@ describe('IndexedDb: allowTabSynchronization', () => {
   after(() => SimpleDb.delete(INDEXEDDB_TEST_DATABASE_NAME));
 
   it('rejects access when synchronization is disabled', async () => {
-    await withPersistence('clientA', async _db1 => {
+    await withPersistence('clientA', async db1 => {
       await expect(
-        withPersistence('clientB', _db2 => Promise.resolve())
+        withPersistence('clientB', db2 => Promise.resolve())
       ).to.eventually.be.rejectedWith(
         'Another tab has exclusive access to the persistence layer.'
       );
@@ -871,8 +871,8 @@ describe('IndexedDb: allowTabSynchronization', () => {
   });
 
   it('grants access when synchronization is enabled', async () => {
-    return withMultiClientPersistence('clientA', async _db1 => {
-      await withMultiClientPersistence('clientB', async _db2 => {});
+    return withMultiClientPersistence('clientA', async db1 => {
+      await withMultiClientPersistence('clientB', async db2 => {});
     });
   });
 });
