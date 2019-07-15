@@ -16,12 +16,12 @@
  */
 
 import firebase from '@firebase/app';
-import './src/platform_node/node_init';
-import { Firestore } from './src/api/database';
-import { configureForFirebase } from './src/platform/config';
+import { FirebaseNamespace } from '@firebase/app-types';
 import * as types from '@firebase/firestore-types';
+import { configureForFirebase } from './src/platform/config';
+import './src/platform_node/node_init';
 
-export function registerFirestore(instance) {
+export function registerFirestore(instance: FirebaseNamespace): void {
   configureForFirebase(instance);
 }
 

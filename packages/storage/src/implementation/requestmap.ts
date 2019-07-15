@@ -14,48 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import * as object from './object';
-import * as RequestExports from './request';
 import { Request } from './request';
 import * as constants from './constants';
 
-/**
- * @struct
- */
 export class RequestMap {
-  private map_: { [key: number]: Request<any> } = {};
-  private id_: number;
+  private readonly map: Map<number, Request<unknown>> = new Map();
+  private id: number;
 
   constructor() {
-    this.id_ = constants.MIN_SAFE_INTEGER;
+    this.id = constants.MIN_SAFE_INTEGER;
   }
 
   /**
    * Registers the given request with this map.
    * The request is unregistered when it completes.
-   * @param r The request to register.
+   *
+   * @param request The request to register.
    */
-  addRequest(r: Request<any>) {
-    let id = this.id_;
-    this.id_++;
-    this.map_[id] = r;
-    let self = this;
+  addRequest(request: Request<unknown>): void {
+    const id = this.id;
+    this.id++;
+    this.map.set(id, request);
 
-    function unmap() {
-      delete self.map_[id];
-    }
-    r.getPromise().then(unmap, unmap);
+    request
+      .getPromise()
+      .then(() => this.map.delete(id), () => this.map.delete(id));
   }
 
   /**
    * Cancels all registered requests.
    */
-  clear() {
-    object.forEach(this.map_, (key: string, val: Request<any>) => {
-      if (val) {
-        val.cancel(true);
-      }
+  clear(): void {
+    this.map.forEach(v => {
+      v && v.cancel(true);
     });
-    this.map_ = {};
+    this.map.clear();
   }
 }

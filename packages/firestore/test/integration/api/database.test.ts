@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 
 import * as firestore from '@firebase/firestore-types';
-import { expect } from 'chai';
+import { expect, use } from 'chai';
 
 import { SimpleDb } from '../../../src/local/simple_db';
 import { fail } from '../../../src/util/assert';
@@ -39,12 +38,14 @@ import {
   withTestDocAndInitialData
 } from '../util/helpers';
 
-chai.use(chaiAsPromised);
+// tslint:disable:no-floating-promises
+
+use(chaiAsPromised);
 
 const Timestamp = firebase.firestore!.Timestamp;
 const FieldValue = firebase.firestore!.FieldValue;
 
-apiDescribe('Database', persistence => {
+apiDescribe('Database', (persistence: boolean) => {
   it('can set a document', () => {
     return withTestDoc(persistence, docRef => {
       return docRef.set({
@@ -516,9 +517,9 @@ apiDescribe('Database', persistence => {
     for (const val of invalidDocValues) {
       it('set/update should reject: ' + val, () => {
         return withTestDoc(persistence, async doc => {
-          // tslint:disable-next-line:no-any Intentionally passing bad types.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, Intentionally passing bad types.
           expect(() => doc.set(val as any)).to.throw();
-          // tslint:disable-next-line:no-any Intentionally passing bad types.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, Intentionally passing bad types.
           expect(() => doc.update(val as any)).to.throw();
         });
       });
@@ -536,7 +537,7 @@ apiDescribe('Database', persistence => {
     });
   });
 
-  apiDescribe('Queries are validated client-side', persistence => {
+  apiDescribe('Queries are validated client-side', (persistence: boolean) => {
     // NOTE: Failure cases are validated in validation_test.ts
 
     it('same inequality fields works', () => {

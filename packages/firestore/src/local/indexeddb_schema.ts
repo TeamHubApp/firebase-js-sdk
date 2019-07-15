@@ -162,7 +162,7 @@ export class SchemaConverter implements SimpleDbSchemaConverter {
     );
 
     return queuesStore.loadAll().next(queues => {
-      return PersistencePromise.forEach(queues, queue => {
+      return PersistencePromise.forEach(queues, (queue: DbMutationQueue) => {
         const range = IDBKeyRange.bound(
           [queue.userId, BATCHID_UNKNOWN],
           [queue.userId, queue.lastAcknowledgedBatchId]
@@ -171,17 +171,20 @@ export class SchemaConverter implements SimpleDbSchemaConverter {
         return mutationsStore
           .loadAll(DbMutationBatch.userMutationsIndex, range)
           .next(dbBatches => {
-            return PersistencePromise.forEach(dbBatches, dbBatch => {
-              assert(
-                dbBatch.userId === queue.userId,
-                `Cannot process batch ${dbBatch.batchId} from unexpected user`
-              );
-              const batch = this.serializer.fromDbMutationBatch(dbBatch);
+            return PersistencePromise.forEach(
+              dbBatches,
+              (dbBatch: DbMutationBatch) => {
+                assert(
+                  dbBatch.userId === queue.userId,
+                  `Cannot process batch ${dbBatch.batchId} from unexpected user`
+                );
+                const batch = this.serializer.fromDbMutationBatch(dbBatch);
 
-              return removeMutationBatch(txn, queue.userId, batch).next(
-                () => {}
-              );
-            });
+                return removeMutationBatch(txn, queue.userId, batch).next(
+                  () => {}
+                );
+              }
+            );
           });
       });
     });
@@ -246,7 +249,9 @@ export class SchemaConverter implements SimpleDbSchemaConverter {
 
     // Helper to add an index entry iff we haven't already written it.
     const cache = new MemoryCollectionParentIndex();
-    const addEntry = collectionPath => {
+    const addEntry = (
+      collectionPath: ResourcePath
+    ): PersistencePromise<void> | undefined => {
       if (cache.add(collectionPath)) {
         const collectionId = collectionPath.lastSegment();
         const parentPath = collectionPath.popLast();
@@ -781,7 +786,6 @@ export class DbTargetDocument {
   ) {
     assert(
       (targetId === 0) === (sequenceNumber !== undefined),
-      // tslint:disable-next-line:max-line-length
       'A target-document row must either have targetId == 0 and a defined sequence number, or a non-zero targetId and no sequence number'
     );
   }

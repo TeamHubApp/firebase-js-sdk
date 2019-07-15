@@ -35,12 +35,14 @@ import {
   withTestDb
 } from '../util/helpers';
 
+// tslint:disable:no-floating-promises
+
 const Blob = firebase.firestore!.Blob;
 const FieldPath = firebase.firestore!.FieldPath;
 const GeoPoint = firebase.firestore!.GeoPoint;
 const Timestamp = firebase.firestore!.Timestamp;
 
-apiDescribe('Queries', persistence => {
+apiDescribe('Queries', (persistence: boolean) => {
   addEqualityMatcher();
 
   it('can issue limit queries', () => {
@@ -585,6 +587,28 @@ apiDescribe('Queries', persistence => {
     }
   );
 
+  (isRunningAgainstEmulator() ? it : it.skip)(
+    'can use IN filters by document ID',
+    async () => {
+      const testDocs = {
+        aa: { key: 'aa' },
+        ab: { key: 'ab' },
+        ba: { key: 'ba' },
+        bb: { key: 'bb' }
+      };
+      await withTestCollection(persistence, testDocs, async coll => {
+        const snapshot = await coll
+          .where(FieldPath.documentId(), inOp, ['aa', 'ab'])
+          .get();
+
+        expect(toDataArray(snapshot)).to.deep.equal([
+          { key: 'aa' },
+          { key: 'ab' }
+        ]);
+      });
+    }
+  );
+
   // TODO(in-queries): Enable browser tests once backend support is ready.
   (isRunningAgainstEmulator() ? it : it.skip)(
     'can use array-contains-any filters',
@@ -625,7 +649,7 @@ apiDescribe('Queries', persistence => {
     const expectedError =
       'QuerySnapshot.docChanges has been changed from a property into a method';
 
-    // tslint:disable-next-line:no-any We are testing invalid API usage.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, We are testing invalid API usage.
     const docChange = querySnap.docChanges as any;
     expect(() => docChange.length).to.throw(expectedError);
     expect(() => {

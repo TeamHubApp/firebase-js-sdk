@@ -23,7 +23,9 @@ import {
   withTestDocAndInitialData
 } from '../util/helpers';
 
-apiDescribe('GetOptions', persistence => {
+// tslint:disable:no-floating-promises
+
+apiDescribe('GetOptions', (persistence: boolean) => {
   it('get document while online with default get options', () => {
     const initialData = { key: 'value' };
     return withTestDocAndInitialData(persistence, initialData, docRef => {

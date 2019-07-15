@@ -16,6 +16,7 @@
  */
 
 import { use } from 'chai';
+import { Equatable } from '../../src/util/misc';
 
 /**
  * @file This file provides a helper function to add a matcher that matches
@@ -24,16 +25,22 @@ import { use } from 'chai';
  * implementation is used.
  */
 
-function customDeepEqual(left, right): boolean {
+function customDeepEqual(left: unknown, right: unknown): boolean {
   /**
    * START: Custom compare logic
    */
-  if (left && typeof left.isEqual === 'function') return left.isEqual(right);
-  if (right && typeof right.isEqual === 'function') return right.isEqual(left);
+  if (typeof left === 'object' && left && 'isEqual' in left) {
+    return (left as Equatable<unknown>).isEqual(right);
+  }
+  if (typeof right === 'object' && right && 'isEqual' in right) {
+    return (right as Equatable<unknown>).isEqual(left);
+  }
   /**
    * END: Custom compare logic
    */
-  if (left === right) return true;
+  if (left === right) {
+    return true;
+  }
   if (
     typeof left === 'number' &&
     typeof right === 'number' &&
@@ -42,20 +49,33 @@ function customDeepEqual(left, right): boolean {
   ) {
     return true;
   }
-  if (typeof left !== typeof right) return false; // needed for structurally different objects
-  if (Object(left) !== left) return false; // primitive values
-  const keys = Object.keys(left);
-  if (keys.length !== Object.keys(right).length) return false;
+  if (typeof left !== typeof right) {
+    return false;
+  } // needed for structurally different objects
+  if (Object(left) !== left) {
+    return false;
+  } // primitive values
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const keys = Object.keys(left as any);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (keys.length !== Object.keys(right as any).length) {
+    return false;
+  }
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    if (!Object.prototype.hasOwnProperty.call(right, key)) return false;
-    if (!customDeepEqual(left[key], right[key])) return false;
+    if (!Object.prototype.hasOwnProperty.call(right, key)) {
+      return false;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!customDeepEqual((left as any)[key], (right as any)[key])) {
+      return false;
+    }
   }
   return true;
 }
 
 /** The original equality function passed in by chai(). */
-let originalFunction: ((r, l) => boolean) | null = null;
+let originalFunction: ((r: unknown, l: unknown) => boolean) | null = null;
 
 export function addEqualityMatcher(): void {
   let isActive = true;
@@ -64,9 +84,10 @@ export function addEqualityMatcher(): void {
     use((chai, utils) => {
       const Assertion = chai.Assertion;
 
-      const assertEql = _super => {
+      // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+      const assertEql = (_super: (r: unknown, l: unknown) => boolean) => {
         originalFunction = originalFunction || _super;
-        return function(...args): void {
+        return function(...args: unknown[]): void {
           if (isActive) {
             const [expected, msg] = args;
             utils.flag(this, 'message', msg);

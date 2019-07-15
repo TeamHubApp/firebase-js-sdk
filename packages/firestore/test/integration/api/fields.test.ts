@@ -16,8 +16,7 @@
  */
 
 import { expect } from 'chai';
-import * as log from '../../../src/util/log';
-import { LogLevel } from '../../../src/util/log';
+import { LogLevel, getLogLevel, setLogLevel } from '../../../src/util/log';
 import firebase from '../util/firebase_export';
 import {
   apiDescribe,
@@ -32,10 +31,10 @@ const FieldPath = firebase.firestore!.FieldPath;
 const FieldValue = firebase.firestore!.FieldValue;
 const Timestamp = firebase.firestore!.Timestamp;
 
-// tslint:disable-next-line:no-any Allow custom types for testing.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, Allow custom types for testing.
 type AnyTestData = any;
 
-apiDescribe('Nested Fields', persistence => {
+apiDescribe('Nested Fields', (persistence: boolean) => {
   const testData = (n?: number): AnyTestData => {
     n = n || 1;
     return {
@@ -240,7 +239,7 @@ apiDescribe('Nested Fields', persistence => {
 // NOTE(mikelehen): I originally combined these tests with the above ones, but
 // Datastore currently prohibits having nested fields and fields with dots in
 // the same entity, so I'm separating them.
-apiDescribe('Fields with special characters', persistence => {
+apiDescribe('Fields with special characters', (persistence: boolean) => {
   const testData = (n?: number): AnyTestData => {
     n = n || 1;
     return {
@@ -346,8 +345,8 @@ apiDescribe('Fields with special characters', persistence => {
   });
 });
 
-apiDescribe('Timestamp Fields in snapshots', persistence => {
-  // tslint:disable-next-line:no-any Figure out how to pass in the Timestamp type
+apiDescribe('Timestamp Fields in snapshots', (persistence: boolean) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, Figure out how to pass in the Timestamp type
   const testDataWithTimestamps = (ts: any): AnyTestData => {
     return { timestamp: ts, nested: { timestamp2: ts } };
   };
@@ -355,8 +354,8 @@ apiDescribe('Timestamp Fields in snapshots', persistence => {
   it('are returned as native dates if timestampsInSnapshots set to false', () => {
     // Avoid the verbose log message triggered by timestampsInSnapshots ==
     // false.
-    const logLevel = log.getLogLevel();
-    log.setLogLevel(LogLevel.SILENT);
+    const logLevel = getLogLevel();
+    setLogLevel(LogLevel.SILENT);
 
     const settings = { ...DEFAULT_SETTINGS };
     settings['timestampsInSnapshots'] = false;
@@ -364,7 +363,7 @@ apiDescribe('Timestamp Fields in snapshots', persistence => {
     const timestamp = new Timestamp(100, 123456789);
     const testDocs = { a: testDataWithTimestamps(timestamp) };
     return withTestCollectionSettings(persistence, settings, testDocs, coll => {
-      log.setLogLevel(logLevel);
+      setLogLevel(logLevel);
       return coll
         .doc('a')
         .get()
@@ -419,8 +418,8 @@ apiDescribe('Timestamp Fields in snapshots', persistence => {
   });
 
   it('timestampsInSnapshots affects server timestamps', () => {
-    const logLevel = log.getLogLevel();
-    log.setLogLevel(LogLevel.SILENT);
+    const logLevel = getLogLevel();
+    setLogLevel(LogLevel.SILENT);
 
     const settings = { ...DEFAULT_SETTINGS };
     settings['timestampsInSnapshots'] = false;
@@ -429,7 +428,7 @@ apiDescribe('Timestamp Fields in snapshots', persistence => {
     };
 
     return withTestCollectionSettings(persistence, settings, testDocs, coll => {
-      log.setLogLevel(logLevel);
+      setLogLevel(logLevel);
       return coll
         .doc('a')
         .get()

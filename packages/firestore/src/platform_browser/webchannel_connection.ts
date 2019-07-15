@@ -20,6 +20,7 @@ import {
   ErrorCode,
   EventType,
   WebChannel,
+  WebChannelOptions,
   XhrIo
 } from '@firebase/webchannel-wrapper';
 
@@ -46,7 +47,7 @@ const RPC_STREAM_SERVICE = 'google.firestore.v1.Firestore';
 const RPC_URL_VERSION = 'v1';
 
 /** Maps RPC names to the corresponding REST endpoint name. */
-const RPC_NAME_REST_MAPPING = {
+const RPC_NAME_REST_MAPPING: { [key: string]: string } = {
   BatchGetDocuments: 'batchGet',
   Commit: 'commit'
 };
@@ -96,7 +97,7 @@ export class WebChannelConnection implements Connection {
     const url = this.makeUrl(rpcName);
 
     return new Promise((resolve: Resolver<Resp>, reject: Rejecter) => {
-      // tslint:disable-next-line:no-any XhrIo doesn't have TS typings.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, XhrIo doesn't have TS typings.
       const xhr: any = new XhrIo();
       xhr.listenOnce(EventType.COMPLETE, () => {
         try {
@@ -192,7 +193,7 @@ export class WebChannelConnection implements Connection {
       '/channel'
     ];
     const webchannelTransport = createWebChannelTransport();
-    const request = {
+    const request: WebChannelOptions = {
       // Background channel test avoids the initial two test calls and decreases
       // initial cold start time.
       // TODO(dimond): wenboz@ mentioned this might affect use with proxies and
@@ -223,7 +224,7 @@ export class WebChannelConnection implements Connection {
       forceLongPolling: this.forceLongPolling
     };
 
-    this.modifyHeadersForRequest(request.initMessageHeaders, token);
+    this.modifyHeadersForRequest(request.initMessageHeaders!, token);
 
     // Sending the custom headers we just added to request.initMessageHeaders
     // (Authorization, etc.) will trigger the browser to make a CORS preflight
@@ -243,12 +244,12 @@ export class WebChannelConnection implements Connection {
     // ReactNative and so we exclude it, which just means ReactNative may be
     // subject to the extra network roundtrip for CORS preflight.
     if (!isReactNative()) {
-      request['httpHeadersOverwriteParam'] = '$httpHeaders';
+      request.httpHeadersOverwriteParam = '$httpHeaders';
     }
 
     const url = urlParts.join('');
     log.debug(LOG_TAG, 'Creating WebChannel: ' + url + ' ' + request);
-    // tslint:disable-next-line:no-any Because listen isn't defined on it.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, Because listen isn't defined on it.
     const channel = webchannelTransport.createWebChannel(url, request) as any;
 
     // WebChannel supports sending the first message with the handshake - saving
@@ -287,7 +288,7 @@ export class WebChannelConnection implements Connection {
     const unguardedEventListen = <T>(
       type: WebChannel.EventType,
       fn: (param?: T) => void
-    ) => {
+    ): void => {
       // TODO(dimond): closure typing seems broken because WebChannel does
       // not implement goog.events.Listenable
       channel.listen(type, (param?: T) => {
@@ -331,7 +332,9 @@ export class WebChannelConnection implements Connection {
     // WebChannel delivers message events as array. If batching is not enabled
     // (it's off by default) each message will be delivered alone, resulting in
     // a single element array.
-    type WebChannelResponse = { data: Resp[] };
+    interface WebChannelResponse {
+      data: Resp[];
+    }
 
     unguardedEventListen<WebChannelResponse>(
       WebChannel.EventType.MESSAGE,
@@ -343,9 +346,10 @@ export class WebChannelConnection implements Connection {
           // (and only errors) to be wrapped in an extra array. To be forward
           // compatible with the bug we need to check either condition. The latter
           // can be removed once the fix has been rolled out.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, msgData.error is not typed.
+          const msgDataAsAny: any = msgData;
           const error =
-            // tslint:disable-next-line:no-any msgData.error is not typed.
-            (msgData as any).error || (msgData[0] && msgData[0].error);
+            msgDataAsAny.error || (msgDataAsAny[0] && msgDataAsAny[0].error);
           if (error) {
             log.debug(LOG_TAG, 'WebChannel received error:', error);
             // error.status will be a string like 'OK' or 'NOT_FOUND'.

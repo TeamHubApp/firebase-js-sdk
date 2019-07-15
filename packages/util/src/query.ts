@@ -15,19 +15,16 @@
  * limitations under the License.
  */
 
-import { forEach } from './obj';
-
 /**
- * Returns a querystring-formatted string (e.g. &arg=val&arg2=val2) from a params
- * object (e.g. {arg: 'val', arg2: 'val2'})
+ * Returns a querystring-formatted string (e.g. &arg=val&arg2=val2) from a
+ * params object (e.g. {arg: 'val', arg2: 'val2'})
  * Note: You must prepend it with ? when adding it to a URL.
- *
- * @param {!Object} querystringParams
- * @return {string}
  */
-export const querystring = function(querystringParams): string {
-  const params: string[] = [];
-  forEach(querystringParams, (key, value) => {
+export function querystring(querystringParams: {
+  [key: string]: string;
+}): string {
+  const params = [];
+  for (const [key, value] of Object.entries(querystringParams)) {
     if (Array.isArray(value)) {
       value.forEach(arrayVal => {
         params.push(
@@ -37,18 +34,16 @@ export const querystring = function(querystringParams): string {
     } else {
       params.push(encodeURIComponent(key) + '=' + encodeURIComponent(value));
     }
-  });
+  }
   return params.length ? '&' + params.join('&') : '';
-};
+}
 
 /**
- * Decodes a querystring (e.g. ?arg=val&arg2=val2) into a params object (e.g. {arg: 'val', arg2: 'val2'})
- *
- * @param {string} querystring
- * @return {!Object}
+ * Decodes a querystring (e.g. ?arg=val&arg2=val2) into a params object
+ * (e.g. {arg: 'val', arg2: 'val2'})
  */
-export const querystringDecode = function(querystring): object {
-  const obj = {};
+export function querystringDecode(querystring: string): object {
+  const obj: { [key: string]: unknown } = {};
   const tokens = querystring.replace(/^\?/, '').split('&');
 
   tokens.forEach(token => {
@@ -58,4 +53,4 @@ export const querystringDecode = function(querystring): object {
     }
   });
   return obj;
-};
+}

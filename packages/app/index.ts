@@ -23,7 +23,8 @@ import { Logger } from '@firebase/logger';
 const logger = new Logger('@firebase/app');
 
 // Firebase Lite detection
-if (isBrowser() && 'firebase' in self) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if (isBrowser() && (self as any).firebase !== undefined) {
   logger.warn(`
     Warning: Firebase is already defined in the global scope. Please make sure
     Firebase library is only loaded once.
@@ -42,7 +43,10 @@ if (isBrowser() && 'firebase' in self) {
 const firebaseNamespace = createFirebaseNamespace();
 const initializeApp = firebaseNamespace.initializeApp;
 
-firebaseNamespace.initializeApp = function() {
+// TODO: This disable can be removed and the 'ignoreRestArgs' option added to
+// the no-explicit-any rule when ESlint releases it.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+firebaseNamespace.initializeApp = function(...args: any) {
   // Environment check before initializing app
   // Do the check in initializeApp, so people have a chance to disable it by setting logLevel
   // in @firebase/logger
@@ -56,13 +60,12 @@ firebaseNamespace.initializeApp = function() {
       "resolve.mainFields":
       https://webpack.js.org/configuration/resolve/#resolvemainfields
       
-      If using Rollup, use the rollup-plugin-node-resolve plugin and set "module"
-      to false and "main" to true:
+      If using Rollup, use the rollup-plugin-node-resolve plugin and specify "main"
+      as the first item in "mainFields", e.g. ['main', 'module'].
       https://github.com/rollup/rollup-plugin-node-resolve
       `);
   }
-
-  return initializeApp.apply(undefined, arguments);
+  return initializeApp.apply(undefined, args);
 };
 
 export const firebase = firebaseNamespace;

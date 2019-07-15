@@ -22,11 +22,13 @@ import { EventsAccumulator } from '../util/events_accumulator';
 import firebase from '../util/firebase_export';
 import * as integrationHelpers from '../util/helpers';
 
+// tslint:disable:no-floating-promises
+
 const apiDescribe = integrationHelpers.apiDescribe;
 const Timestamp = firebase.firestore!.Timestamp;
 const FieldValue = firebase.firestore!.FieldValue;
 
-apiDescribe('Database batch writes', persistence => {
+apiDescribe('Database batch writes', (persistence: boolean) => {
   it('supports empty batches', () => {
     return integrationHelpers.withTestDb(persistence, db => {
       return db.batch().commit();

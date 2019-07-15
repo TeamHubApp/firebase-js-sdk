@@ -38,6 +38,9 @@ describe('Performance Monitoring > perf_logger', () => {
   const EFFECTIVE_CONNECTION_TYPE = 2;
   const SERVICE_WORKER_STATUS = 3;
   const TIME_ORIGIN = 1556512199893.9033;
+  const TRACE_NAME = 'testTrace';
+  const START_TIME = 12345;
+  const DURATION = 321;
 
   let addToQueueStub: SinonStub<
     Array<{ message: string; eventTime: number }>,
@@ -80,9 +83,6 @@ describe('Performance Monitoring > perf_logger', () => {
 
   describe('logTrace', () => {
     it('creates, serializes and sends a trace to cc service', () => {
-      const TRACE_NAME = 'testTrace';
-      const START_TIME = 12345;
-      const DURATION = 321;
       const EXPECTED_TRACE_MESSAGE = `{"application_info":{"google_app_id":"${APP_ID}",\
 "app_instance_id":"${IID}","web_app_info":{"sdk_version":"${SDK_VERSION}",\
 "page_url":"${PAGE_URL}","service_worker_status":${SERVICE_WORKER_STATUS},\
@@ -100,6 +100,15 @@ describe('Performance Monitoring > perf_logger', () => {
       expect(addToQueueStub.getCall(0).args[0].message).to.be.equal(
         EXPECTED_TRACE_MESSAGE
       );
+    });
+
+    it('does not log an event if cookies are disabled in the browser', () => {
+      stub(Api.prototype, 'requiredApisAvailable').returns(false);
+      const trace = new Trace(TRACE_NAME);
+      trace.record(START_TIME, DURATION);
+      clock.tick(1);
+
+      expect(addToQueueStub).not.to.be.called;
     });
   });
 
@@ -143,7 +152,7 @@ describe('Performance Monitoring > perf_logger', () => {
 "visibility_state":${VISIBILITY_STATE},"effective_connection_type":${EFFECTIVE_CONNECTION_TYPE}},\
 "application_process_state":0},\
 "network_request_metric":{"url":"${RESOURCE_PERFORMANCE_ENTRY.name}",\
-"http_method":1,"http_response_code":200,\
+"http_method":0,"http_response_code":200,\
 "response_payload_bytes":${RESOURCE_PERFORMANCE_ENTRY.transferSize},\
 "client_start_time_us":${START_TIME},\
 "time_to_response_completed_us":${TIME_TO_RESPONSE_COMPLETED}}}`;

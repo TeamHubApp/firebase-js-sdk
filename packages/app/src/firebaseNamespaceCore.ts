@@ -80,7 +80,8 @@ export function createFirebaseNamespaceCore(
   //
   //   import * as firebase from 'firebase';
   //   which becomes: var firebase = require('firebase');
-  namespace['default'] = namespace;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (namespace as any)['default'] = namespace;
 
   // firebase.apps is a read-only getter.
   Object.defineProperty(namespace, 'apps', {
@@ -103,11 +104,12 @@ export function createFirebaseNamespaceCore(
   function app(name?: string): FirebaseApp {
     name = name || DEFAULT_ENTRY_NAME;
     if (!contains(apps, name)) {
-      throw ERROR_FACTORY.create(AppError.NO_APP, { name });
+      throw ERROR_FACTORY.create(AppError.NO_APP, { appName: name });
     }
     return apps[name];
   }
 
+  // @ts-ignore
   app['App'] = firebaseAppImpl;
   /**
    * Create a new App instance (name must be unique).
@@ -135,11 +137,13 @@ export function createFirebaseNamespaceCore(
     const { name } = config;
 
     if (typeof name !== 'string' || !name) {
-      throw ERROR_FACTORY.create(AppError.BAD_APP_NAME, { name: String(name) });
+      throw ERROR_FACTORY.create(AppError.BAD_APP_NAME, {
+        appName: String(name)
+      });
     }
 
     if (contains(apps, name)) {
-      throw ERROR_FACTORY.create(AppError.DUPLICATE_APP, { name });
+      throw ERROR_FACTORY.create(AppError.DUPLICATE_APP, { appName: name });
     }
 
     const app = new firebaseAppImpl(
@@ -178,7 +182,7 @@ export function createFirebaseNamespaceCore(
   ): FirebaseServiceNamespace<FirebaseService> {
     // Cannot re-register a service that already exists
     if (factories[name]) {
-      throw ERROR_FACTORY.create(AppError.DUPLICATE_SERVICE, { name });
+      throw ERROR_FACTORY.create(AppError.DUPLICATE_SERVICE, { appName: name });
     }
 
     // Capture the service factory for later service instantiation
@@ -196,15 +200,17 @@ export function createFirebaseNamespaceCore(
 
     // The Service namespace is an accessor function ...
     function serviceNamespace(appArg: FirebaseApp = app()): FirebaseService {
+      // @ts-ignore
       if (typeof appArg[name] !== 'function') {
         // Invalid argument.
         // This happens in the following case: firebase.storage('gs:/')
         throw ERROR_FACTORY.create(AppError.INVALID_APP_ARGUMENT, {
-          name
+          appName: name
         });
       }
 
       // Forward service instance lookup to the FirebaseApp.
+      // @ts-ignore
       return appArg[name]();
     }
 
@@ -214,13 +220,19 @@ export function createFirebaseNamespaceCore(
     }
 
     // Monkey-patch the serviceNamespace onto the firebase namespace
+    // @ts-ignore
     namespace[name] = serviceNamespace;
 
     // Patch the FirebaseAppImpl prototype
-    firebaseAppImpl.prototype[name] = function(...args) {
-      const serviceFxn = this._getService.bind(this, name);
-      return serviceFxn.apply(this, allowMultipleInstances ? args : []);
-    };
+    // @ts-ignore
+    firebaseAppImpl.prototype[name] =
+      // TODO: The eslint disable can be removed and the 'ignoreRestArgs'
+      // option added to the no-explicit-any rule when ESlint releases it.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      function(...args: any) {
+        const serviceFxn = this._getService.bind(this, name);
+        return serviceFxn.apply(this, allowMultipleInstances ? args : []);
+      };
 
     return serviceNamespace;
   }

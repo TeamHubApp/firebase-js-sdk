@@ -19,7 +19,6 @@ import { FirebaseApp } from '@firebase/app-types';
 import * as args from './implementation/args';
 import { AuthWrapper } from './implementation/authwrapper';
 import { Location } from './implementation/location';
-import * as fbsPromiseImpl from './implementation/promise_external';
 import * as RequestExports from './implementation/request';
 import { XhrIoPool } from './implementation/xhriopool';
 import { Reference } from './reference';
@@ -37,7 +36,7 @@ export class Service {
   private internals_: ServiceInternals;
 
   constructor(app: FirebaseApp, pool: XhrIoPool, url?: string) {
-    function maker(authWrapper: AuthWrapper, loc: Location) {
+    function maker(authWrapper: AuthWrapper, loc: Location): Reference {
       return new Reference(authWrapper, loc);
     }
     this.authWrapper_ = new AuthWrapper(
@@ -64,8 +63,11 @@ export class Service {
    * bucket.
    */
   ref(path?: string): Reference {
-    function validator(path: string) {
-      if (/^[A-Za-z]+:\/\//.test(path)) {
+    function validator(path: unknown): void {
+      if (typeof path !== 'string') {
+        throw 'Path is not a string.';
+      }
+      if (/^[A-Za-z]+:\/\//.test(path as string)) {
         throw 'Expected child path but got a URL, use refFromURL instead.';
       }
     }
@@ -74,7 +76,7 @@ export class Service {
       throw new Error('No Storage Bucket defined in Firebase Options.');
     }
 
-    let ref = new Reference(this.authWrapper_, this.bucket_);
+    const ref = new Reference(this.authWrapper_, this.bucket_);
     if (path != null) {
       return ref.child(path);
     } else {
@@ -87,12 +89,15 @@ export class Service {
    * which must be a gs:// or http[s]:// URL.
    */
   refFromURL(url: string): Reference {
-    function validator(p: string) {
-      if (!/^[A-Za-z]+:\/\//.test(p)) {
+    function validator(p: unknown): void {
+      if (typeof p !== 'string') {
+        throw 'Path is not a string.';
+      }
+      if (!/^[A-Za-z]+:\/\//.test(p as string)) {
         throw 'Expected full URL but got a child path, use ref instead.';
       }
       try {
-        Location.makeFromUrl(p);
+        Location.makeFromUrl(p as string);
       } catch (e) {
         throw 'Expected valid full URL but got an invalid one.';
       }
@@ -105,7 +110,7 @@ export class Service {
     return this.authWrapper_.maxUploadRetryTime();
   }
 
-  setMaxUploadRetryTime(time: number) {
+  setMaxUploadRetryTime(time: number): void {
     args.validate(
       'setMaxUploadRetryTime',
       [args.nonNegativeNumberSpec()],
@@ -114,7 +119,7 @@ export class Service {
     this.authWrapper_.setMaxUploadRetryTime(time);
   }
 
-  setMaxOperationRetryTime(time: number) {
+  setMaxOperationRetryTime(time: number): void {
     args.validate(
       'setMaxOperationRetryTime',
       [args.nonNegativeNumberSpec()],
@@ -148,6 +153,6 @@ export class ServiceInternals {
    */
   delete(): Promise<void> {
     this.service_.authWrapper_.deleteApp();
-    return fbsPromiseImpl.resolve<void>(undefined);
+    return Promise.resolve();
   }
 }

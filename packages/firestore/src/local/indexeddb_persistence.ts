@@ -116,7 +116,7 @@ const ZOMBIED_CLIENTS_KEY_PREFIX = 'firestore_zombie';
 export class IndexedDbTransaction extends PersistenceTransaction {
   constructor(
     readonly simpleDbTransaction: SimpleDbTransaction,
-    readonly currentSequenceNumber
+    readonly currentSequenceNumber: ListenSequenceNumber
   ) {
     super();
   }
@@ -168,9 +168,9 @@ export class IndexedDbTransaction extends PersistenceTransaction {
  * TODO(b/114226234): Remove `synchronizeTabs` section when multi-tab is no
  * longer optional.
  */
-export type MultiClientParams = {
+export interface MultiClientParams {
   sequenceNumberSyncer: SequenceNumberSyncer;
-};
+}
 export class IndexedDbPersistence implements Persistence {
   static getStore<Key extends IDBValidKey, Value>(
     txn: PersistenceTransaction,
@@ -515,8 +515,10 @@ export class IndexedDbPersistence implements Persistence {
             })
             .next(() =>
               // Delete metadata for clients that are no longer considered active.
-              PersistencePromise.forEach(inactiveClients, inactiveClient =>
-                metadataStore.delete(inactiveClient.clientId)
+              PersistencePromise.forEach(
+                inactiveClients,
+                (inactiveClient: DbClientMetadata) =>
+                  metadataStore.delete(inactiveClient.clientId)
               )
             )
             .next(() => {
@@ -882,7 +884,9 @@ export class IndexedDbPersistence implements Persistence {
    * Obtains or extends the new primary lease for the local client. This
    * method does not verify that the client is eligible for this lease.
    */
-  private acquireOrExtendPrimaryLease(txn): PersistencePromise<void> {
+  private acquireOrExtendPrimaryLease(
+    txn: SimpleDbTransaction
+  ): PersistencePromise<void> {
     const newPrimary = new DbPrimaryClient(
       this.clientId,
       this.allowTabSynchronization,

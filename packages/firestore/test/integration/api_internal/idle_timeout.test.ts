@@ -20,7 +20,7 @@ import { Deferred } from '../../util/promise';
 import { apiDescribe, withTestDb } from '../util/helpers';
 import { asyncQueue } from '../util/internal_helpers';
 
-apiDescribe('Idle Timeout', persistence => {
+apiDescribe('Idle Timeout', (persistence: boolean) => {
   it('can write document after idle timeout', () => {
     return withTestDb(persistence, db => {
       const docRef = db.collection('test-collection').doc();
@@ -37,7 +37,7 @@ apiDescribe('Idle Timeout', persistence => {
 
   it('can watch documents after idle timeout', () => {
     return withTestDb(persistence, db => {
-      const awaitOnlineSnapshot = () => {
+      const awaitOnlineSnapshot = (): Promise<void> => {
         const docRef = db.collection('test-collection').doc();
         const deferred = new Deferred<void>();
         const unregister = docRef.onSnapshot(

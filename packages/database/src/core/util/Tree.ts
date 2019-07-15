@@ -17,7 +17,8 @@
 
 import { assert } from '@firebase/util';
 import { Path } from './Path';
-import { forEach, contains, safeGet } from '@firebase/util';
+import { contains, safeGet } from '@firebase/util';
+import { each } from './util';
 
 /**
  * Node in a Tree.
@@ -57,7 +58,7 @@ export class Tree<T> {
   subTree(pathObj: string | Path): Tree<T> {
     // TODO: Require pathObj to be Path?
     let path = pathObj instanceof Path ? pathObj : new Path(pathObj);
-    let child = this as any,
+    let child = this as Tree<T>,
       next;
     while ((next = path.getFront()) !== null) {
       const childNode = safeGet(child.node_.children, next) || new TreeNode();
@@ -118,7 +119,7 @@ export class Tree<T> {
    * @param {function(!Tree.<T>)} action Action to be called for each child.
    */
   forEachChild(action: (tree: Tree<T>) => void) {
-    forEach(this.node_.children, (child: string, childTree: TreeNode<T>) => {
+    each(this.node_.children, (child: string, childTree: TreeNode<T>) => {
       action(new Tree<T>(child, this, childTree));
     });
   }

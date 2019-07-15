@@ -25,11 +25,15 @@ import { GeoPoint } from '../../../../src/api/geo_point';
 import { Timestamp } from '../../../../src/api/timestamp';
 import { DatabaseId } from '../../../../src/core/database_info';
 import {
+  ArrayContainsAnyFilter,
+  ArrayContainsFilter,
   Direction,
+  FieldFilter,
+  InFilter,
+  KeyFieldFilter,
+  Operator,
   OrderBy,
-  Query,
-  RelationFilter,
-  RelationOp
+  Query
 } from '../../../../src/core/query';
 import { SnapshotVersion } from '../../../../src/core/snapshot_version';
 import { QueryData, QueryPurpose } from '../../../../src/local/query_data';
@@ -54,6 +58,7 @@ import {
   WatchTargetChangeState
 } from '../../../../src/remote/watch_change';
 import { Code, FirestoreError } from '../../../../src/util/error';
+import { Indexable } from '../../../../src/util/misc';
 import * as obj from '../../../../src/util/obj';
 import * as types from '../../../../src/util/types';
 import { addEqualityMatcher } from '../../../util/equality_matcher';
@@ -156,7 +161,9 @@ describe('Serializer', () => {
         const actualProtobufjsProto: ProtobufJS.Message = ValueMessage.fromObject(
           actualJsonProto
         );
-        expect(actualProtobufjsProto[valueType]).to.deep.equal(protobufJsValue);
+        expect(
+          ((actualProtobufjsProto as unknown) as Indexable)[valueType]
+        ).to.deep.equal(protobufJsValue);
 
         // Convert protobufjs back to JSON.
         const returnJsonProto = ValueMessage.toObject(
@@ -676,13 +683,13 @@ describe('Serializer', () => {
     expect(s.fromDocument(serialized).isEqual(d)).to.equal(true);
   });
 
-  describe('to/from RelationFilter', () => {
+  describe('to/from FieldFilter', () => {
     addEqualityMatcher();
 
     it('makes dotted-property names', () => {
       const path = new FieldPath(['item', 'part', 'top']);
-      const input = new RelationFilter(path, RelationOp.EQUAL, wrap('food'));
-      const actual = s.toRelationFilter(input);
+      const input = FieldFilter.create(path, Operator.EQUAL, wrap('food'));
+      const actual = s.toUnaryOrFieldFilter(input);
       expect(actual).to.deep.equal({
         fieldFilter: {
           field: { fieldPath: 'item.part.top' },
@@ -690,12 +697,14 @@ describe('Serializer', () => {
           value: { stringValue: 'food' }
         }
       });
-      expect(s.fromRelationFilter(actual)).to.deep.equal(input);
+      const roundtripped = s.fromFieldFilter(actual);
+      expect(roundtripped).to.deep.equal(input);
+      expect(roundtripped).to.be.instanceof(FieldFilter);
     });
 
     it('converts LessThan', () => {
       const input = filter('field', '<', 42);
-      const actual = s.toRelationFilter(input);
+      const actual = s.toUnaryOrFieldFilter(input);
       expect(actual).to.deep.equal({
         fieldFilter: {
           field: { fieldPath: 'field' },
@@ -703,12 +712,14 @@ describe('Serializer', () => {
           value: { integerValue: '42' }
         }
       });
-      expect(s.fromRelationFilter(actual)).to.deep.equal(input);
+      const roundtripped = s.fromFieldFilter(actual);
+      expect(roundtripped).to.deep.equal(input);
+      expect(roundtripped).to.be.instanceof(FieldFilter);
     });
 
     it('converts LessThanOrEqual', () => {
       const input = filter('field', '<=', 'food');
-      const actual = s.toRelationFilter(input);
+      const actual = s.toUnaryOrFieldFilter(input);
       expect(actual).to.deep.equal({
         fieldFilter: {
           field: { fieldPath: 'field' },
@@ -716,12 +727,14 @@ describe('Serializer', () => {
           value: { stringValue: 'food' }
         }
       });
-      expect(s.fromRelationFilter(actual)).to.deep.equal(input);
+      const roundtripped = s.fromFieldFilter(actual);
+      expect(roundtripped).to.deep.equal(input);
+      expect(roundtripped).to.be.instanceof(FieldFilter);
     });
 
     it('converts GreaterThan', () => {
       const input = filter('field', '>', false);
-      const actual = s.toRelationFilter(input);
+      const actual = s.toUnaryOrFieldFilter(input);
       expect(actual).to.deep.equal({
         fieldFilter: {
           field: { fieldPath: 'field' },
@@ -729,12 +742,14 @@ describe('Serializer', () => {
           value: { booleanValue: false }
         }
       });
-      expect(s.fromRelationFilter(actual)).to.deep.equal(input);
+      const roundtripped = s.fromFieldFilter(actual);
+      expect(roundtripped).to.deep.equal(input);
+      expect(roundtripped).to.be.instanceof(FieldFilter);
     });
 
     it('converts GreaterThanOrEqual', () => {
       const input = filter('field', '>=', 1e100);
-      const actual = s.toRelationFilter(input);
+      const actual = s.toUnaryOrFieldFilter(input);
       expect(actual).to.deep.equal({
         fieldFilter: {
           field: { fieldPath: 'field' },
@@ -742,12 +757,36 @@ describe('Serializer', () => {
           value: { doubleValue: 1e100 }
         }
       });
-      expect(s.fromRelationFilter(actual)).to.deep.equal(input);
+      const roundtripped = s.fromFieldFilter(actual);
+      expect(roundtripped).to.deep.equal(input);
+      expect(roundtripped).to.be.instanceof(FieldFilter);
+    });
+
+    it('converts key field', () => {
+      const input = filter(
+        DOCUMENT_KEY_NAME,
+        '==',
+        ref('project/database', 'coll/doc')
+      );
+      const actual = s.toUnaryOrFieldFilter(input);
+      expect(actual).to.deep.equal({
+        fieldFilter: {
+          field: { fieldPath: '__name__' },
+          op: 'EQUAL',
+          value: {
+            referenceValue:
+              'projects/project/databases/database/documents/coll/doc'
+          }
+        }
+      });
+      const roundtripped = s.fromFieldFilter(actual);
+      expect(roundtripped).to.deep.equal(input);
+      expect(roundtripped).to.be.instanceof(KeyFieldFilter);
     });
 
     it('converts array-contains', () => {
       const input = filter('field', 'array-contains', 42);
-      const actual = s.toRelationFilter(input);
+      const actual = s.toUnaryOrFieldFilter(input);
       expect(actual).to.deep.equal({
         fieldFilter: {
           field: { fieldPath: 'field' },
@@ -755,12 +794,14 @@ describe('Serializer', () => {
           value: { integerValue: '42' }
         }
       });
-      expect(s.fromRelationFilter(actual)).to.deep.equal(input);
+      const roundtripped = s.fromFieldFilter(actual);
+      expect(roundtripped).to.deep.equal(input);
+      expect(roundtripped).to.be.instanceof(ArrayContainsFilter);
     });
 
     it('converts IN', () => {
       const input = filter('field', 'in', [42]);
-      const actual = s.toRelationFilter(input);
+      const actual = s.toUnaryOrFieldFilter(input);
       expect(actual).to.deep.equal({
         fieldFilter: {
           field: { fieldPath: 'field' },
@@ -776,12 +817,14 @@ describe('Serializer', () => {
           }
         }
       });
-      expect(s.fromRelationFilter(actual)).to.deep.equal(input);
+      const roundtripped = s.fromFieldFilter(actual);
+      expect(roundtripped).to.deep.equal(input);
+      expect(roundtripped).to.be.instanceof(InFilter);
     });
 
     it('converts array-contains-any', () => {
       const input = filter('field', 'array-contains-any', [42]);
-      const actual = s.toRelationFilter(input);
+      const actual = s.toUnaryOrFieldFilter(input);
       expect(actual).to.deep.equal({
         fieldFilter: {
           field: { fieldPath: 'field' },
@@ -797,7 +840,9 @@ describe('Serializer', () => {
           }
         }
       });
-      expect(s.fromRelationFilter(actual)).to.deep.equal(input);
+      const roundtripped = s.fromFieldFilter(actual);
+      expect(roundtripped).to.deep.equal(input);
+      expect(roundtripped).to.be.instanceof(ArrayContainsAnyFilter);
     });
   });
 
@@ -806,7 +851,7 @@ describe('Serializer', () => {
 
     it('converts null', () => {
       const input = filter('field', '==', null);
-      const actual = s.toUnaryFilter(input);
+      const actual = s.toUnaryOrFieldFilter(input);
       expect(actual).to.deep.equal({
         unaryFilter: {
           field: { fieldPath: 'field' },
@@ -818,7 +863,7 @@ describe('Serializer', () => {
 
     it('converts Nan', () => {
       const input = filter('field', '==', NaN);
-      const actual = s.toUnaryFilter(input);
+      const actual = s.toUnaryOrFieldFilter(input);
       expect(actual).to.deep.equal({
         unaryFilter: {
           field: { fieldPath: 'field' },
@@ -1177,10 +1222,10 @@ describe('Serializer', () => {
   describe('to/from OperatorName', () => {
     addEqualityMatcher();
 
-    it('contains all RelationOps', () => {
-      // tslint:disable-next-line:no-any giant hack
-      obj.forEach(RelationOp as any, (name, op) => {
-        if (op instanceof RelationOp) {
+    it('contains all Operators', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, giant hack
+      obj.forEach(Operator as any, (name, op) => {
+        if (op instanceof Operator) {
           expect(s.toOperatorName(op), 'for name').to.exist;
           expect(s.fromOperatorName(s.toOperatorName(op))).to.deep.equal(op);
         }
@@ -1192,7 +1237,7 @@ describe('Serializer', () => {
     addEqualityMatcher();
 
     it('contains all Directions', () => {
-      // tslint:disable-next-line:no-any giant hack
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, giant hack
       obj.forEach(Direction as any, (name, dir) => {
         if (dir instanceof Direction) {
           expect(s.toDirection(dir), 'for ' + name).to.exist;

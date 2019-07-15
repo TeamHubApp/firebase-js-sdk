@@ -107,6 +107,10 @@ export function logTrace(trace: Trace): void {
   if (!settingsService.dataCollectionEnabled && !trace.isAuto) {
     return;
   }
+  // Do not log if required apis are not available.
+  if (!Api.getInstance().requiredApisAvailable()) {
+    return;
+  }
   // Only log the page load auto traces if page is visible.
   if (trace.isAuto && getVisibilityState() !== VisibilityState.VISIBLE) {
     return;
@@ -171,7 +175,7 @@ function serializer(resource: {}, resourceType: ResourceType): string {
 function serializeNetworkRequest(networkRequest: NetworkRequest): string {
   const networkRequestMetric: NetworkRequestMetric = {
     url: networkRequest.url,
-    http_method: 1,
+    http_method: networkRequest.httpMethod || 0,
     http_response_code: 200,
     response_payload_bytes: networkRequest.responsePayloadBytes,
     client_start_time_us: networkRequest.startTimeUs,

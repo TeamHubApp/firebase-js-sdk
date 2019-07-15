@@ -24,9 +24,10 @@ import firebase from './firebase_export';
  * dependencies on src/ files.
  */
 
-// tslint:disable-next-line:no-any __karma__ is an untyped global
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, __karma__ is an untyped global
 declare const __karma__: any;
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const PROJECT_CONFIG = require('../../../../../config/project.json');
 
 const EMULATOR_PORT = process.env.FIRESTORE_EMULATOR_PORT;
@@ -45,7 +46,7 @@ const PROD_FIRESTORE_SETTING = {
 
 export const DEFAULT_SETTINGS = getDefaultSettings();
 
-// tslint:disable-next-line:no-console
+// eslint-disable-next-line no-console
 console.log(`Default Settings: ${JSON.stringify(DEFAULT_SETTINGS)}`);
 
 function getDefaultSettings(): firestore.Settings {
@@ -128,7 +129,7 @@ export function toChangesArray(
 export function toDataMap(
   docSet: firestore.QuerySnapshot
 ): { [field: string]: firestore.DocumentData } {
-  const docsData = {};
+  const docsData: { [field: string]: firestore.DocumentData } = {};
   docSet.forEach(doc => {
     docsData[doc.id] = doc.data();
   });

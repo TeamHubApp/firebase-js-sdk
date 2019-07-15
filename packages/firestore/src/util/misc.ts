@@ -18,8 +18,10 @@
 import { assert } from './assert';
 
 export type EventHandler<E> = (value: E) => void;
+export interface Indexable {
+  [k: string]: unknown;
+}
 
-// tslint:disable-next-line:class-as-namespace
 export class AutoId {
   static newId(): string {
     // Alphanumeric characters
@@ -35,8 +37,12 @@ export class AutoId {
 }
 
 export function primitiveComparator<T>(left: T, right: T): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
+  if (left < right) {
+    return -1;
+  }
+  if (left > right) {
+    return 1;
+  }
   return 0;
 }
 
